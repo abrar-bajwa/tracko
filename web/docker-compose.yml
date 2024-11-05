@@ -1,0 +1,38 @@
+version: '3'
+
+services:
+
+  backend:
+    build: ./backend
+    image: backend-image:latest
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./backend/index.js:/app/backend/index.js
+      - ./backend/package.json:/app/backend/package.json
+      - ./backend/prisma/schema.prisma:/app/backend/prisma/schema.prisma
+    networks:
+      - mynetwork
+
+  frontend:
+    build: ./frontend
+    image: frontend-image:latest
+    restart: always
+    depends_on:
+      - backend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend/src:/app/frontend/src
+      - ./frontend/public:/app/frontend/public
+      - ./frontend/package.json:/app/frontend/package.json
+    networks:
+      - mynetwork
+
+networks:
+  mynetwork:
+    driver: bridge

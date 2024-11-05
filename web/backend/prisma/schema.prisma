@@ -1,0 +1,268 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model attendee {
+  attendee_id Int      @id @default(autoincrement())
+  session_id  Int?
+  user_id     Int?
+  session     session? @relation(fields: [session_id], references: [session_id], onDelete: NoAction, onUpdate: NoAction, map: "attendee_ibfk_1")
+  users       users?   @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "attendee_ibfk_2")
+
+  @@index([session_id], map: "session_id")
+  @@index([user_id], map: "user_id")
+}
+
+model developer {
+  developer_id        Int            @id @default(autoincrement())
+  velocity_per_sprint Int?
+  availability_hours  Int?
+  estimates_id        Int?
+  users               users          @relation(fields: [developer_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "developer_ibfk_1")
+  estimates           estimates?     @relation(fields: [estimates_id], references: [estimates_id], onDelete: NoAction, onUpdate: NoAction, map: "developer_ibfk_2")
+  project_team        project_team[]
+
+  @@index([estimates_id], map: "estimates_id")
+}
+
+model duration {
+  duration_id Int       @id @default(autoincrement())
+  start_date  DateTime? @db.Date
+  end_date    DateTime? @db.Date
+  start_time  DateTime? @db.Time(0)
+  end_time    DateTime? @db.Time(0)
+  session     session[]
+}
+
+model estimates {
+  estimates_id       Int              @id @default(autoincrement())
+  story_points       Int?
+  product_backlog_id Int?
+  weight_factor      Int?
+  poker_planning     poker_planning[]
+  developer          developer[]
+}
+
+model interrupts {
+  id          Int    @id @default(autoincrement())
+  name        String
+  hours       Int
+  minutes     Int
+  projectId   Int
+  developerId Int
+
+}
+
+model poker_planning {
+  poker_planning_id  Int              @id @default(autoincrement())
+  session_id         Int?
+  project_id         Int?
+  estimates_id       Int?
+  product_backlog_id Int?
+  session            session?         @relation(fields: [session_id], references: [session_id], onDelete: NoAction, onUpdate: NoAction, map: "poker_planning_ibfk_1")
+  estimates          estimates?       @relation(fields: [estimates_id], references: [estimates_id], onDelete: NoAction, onUpdate: NoAction, map: "poker_planning_ibfk_3")
+  product_backlog    product_backlog? @relation(fields: [product_backlog_id], references: [product_backlog_id], onDelete: NoAction, onUpdate: NoAction, map: "poker_planning_ibfk_4")
+
+  @@index([estimates_id], map: "estimates_id")
+  @@index([product_backlog_id], map: "product_backlog_id")
+  @@index([project_id], map: "project_id")
+  @@index([session_id], map: "session_id")
+}
+
+model product_backlog {
+  product_backlog_id Int              @id @default(autoincrement())
+  project_id         Int?
+  title              String           @db.VarChar(255)
+  description        String           @db.Text
+  priority           String?          @db.VarChar(255)
+  assignee           Int?
+  reporter           Int?
+  task_id            Int?
+  estimates_id       Int?
+  poker_planning     poker_planning[]
+  sprint_backlog_id  Int?
+
+  @@index([assignee], map: "assignee")
+  @@index([estimates_id], map: "estimates_id")
+  @@index([project_id], map: "project_id")
+  @@index([reporter], map: "reporter")
+  @@index([task_id], map: "task_id")
+}
+
+model product_owner {
+  product_owner_id Int            @id @default(autoincrement())
+  project_id       Int?
+  users            users          @relation(fields: [product_owner_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "product_owner_ibfk_1")
+  project_team     project_team[]
+
+  @@index([project_id], map: "project_id")
+}
+
+model project {
+  project_id         Int            @id @default(autoincrement())
+  title              String         @db.VarChar(255)
+  description        String?        @db.Text
+  product_backlog_id Int?
+  sprint_id          Int?
+  product_owner_id   Int?
+  poker_planning_id  Int?
+  project_team_id    Int?
+  user_id            Int?
+  fp                 Int?
+  cocomo             Int?
+  project_team       project_team[]
+  sprint             sprint?        @relation(fields: [sprint_id], references: [sprint_id], onDelete: NoAction, onUpdate: NoAction, map: "project_ibfk_2")
+
+  @@index([poker_planning_id], map: "poker_planning_id")
+  @@index([product_backlog_id], map: "product_backlog_id")
+  @@index([product_owner_id], map: "product_owner_id")
+  @@index([project_team_id], map: "project_team_id")
+  @@index([sprint_id], map: "sprint_id")
+}
+
+model fp_des {
+  fp_des_id  Int     @id @default(autoincrement())
+  type       String?
+  count      Int?
+  complexity Int?
+  fp_id      Int?
+  fp         fp?     @relation(fields: [fpFp_id], references: [fp_id])
+  fpFp_id    Int?
+
+  @@index([fp_id], map: "fp_id")
+}
+
+model fp {
+  fp_id      Int      @id @default(autoincrement())
+  fp_des     fp_des[]
+  project_id Int?
+}
+
+model actor {
+  actor_id    Int     @id @default(autoincrement())
+  name        String
+  description String?
+  complexity  Int?
+  usecaseId   Int?
+
+  usecase           usecase? @relation(fields: [usecaseUsecase_id], references: [usecase_id])
+  usecaseUsecase_id Int?
+}
+
+model usecase {
+  usecase_id               Int     @id @default(autoincrement())
+  title                    String  @db.VarChar(255)
+  description              String  @db.Text
+  pre_condition            String  @db.Text
+  steps                    String  @db.Text
+  post_condition           String  @db.Text
+  actor                    actor[]
+  technical_complexity     Int?
+  environmental_complexity Int?
+  type                     String?
+  transactions             Int?
+  weightfactor             Int?
+  project_id               Int?
+}
+
+model project_team {
+  project_team_id  Int            @id @default(autoincrement())
+  developer_id     Int?
+  scrum_master_id  Int?
+  product_owner_id Int?
+  project_id       Int?
+  developer        developer?     @relation(fields: [developer_id], references: [developer_id], onDelete: NoAction, onUpdate: NoAction, map: "project_team_ibfk_1")
+  scrum_master     scrum_master?  @relation(fields: [scrum_master_id], references: [scrum_master_id], onDelete: NoAction, onUpdate: NoAction, map: "project_team_ibfk_2")
+  product_owner    product_owner? @relation(fields: [product_owner_id], references: [product_owner_id], onDelete: NoAction, onUpdate: NoAction, map: "project_team_ibfk_3")
+  project          project?       @relation(fields: [project_id], references: [project_id], onDelete: NoAction, onUpdate: NoAction, map: "project_team_ibfk_4")
+
+  @@index([developer_id], map: "developer_id")
+  @@index([product_owner_id], map: "product_owner_id")
+  @@index([project_id], map: "project_id")
+  @@index([scrum_master_id], map: "scrum_master_id")
+}
+
+model scrum_master {
+  scrum_master_id Int            @id @default(autoincrement())
+  project_team    project_team[]
+}
+
+model session {
+  session_id     Int              @id @default(autoincrement())
+  duration_id    Int?
+  attendee_id    Int?
+  invite_code    String?          @db.VarChar(255)
+  attendee       attendee[]
+  poker_planning poker_planning[]
+  duration       duration?        @relation(fields: [duration_id], references: [duration_id], onDelete: NoAction, onUpdate: NoAction, map: "session_ibfk_1")
+  users          users?           @relation(fields: [attendee_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "session_ibfk_2")
+
+  @@index([attendee_id], map: "attendee_id")
+  @@index([duration_id], map: "duration_id")
+}
+
+model sprint {
+  sprint_id         Int       @id @default(autoincrement())
+  start_date        DateTime? @db.Date
+  end_date          DateTime? @db.Date
+  sprint_backlog_id Int?
+  project           project[]
+
+  @@index([sprint_backlog_id], map: "sprint_backlog_id")
+}
+
+model sprint_backlog {
+  sprint_backlogs_id  Int  @id @default(autoincrement())
+  product_backlogs_id Int?
+  sprint_id           Int?
+
+  @@index([product_backlogs_id], map: "product_backlogs_id")
+  @@index([sprint_id], map: "sprint_id")
+}
+
+model task {
+  task_id            Int       @id @default(autoincrement())
+  type               String?   @db.VarChar(255)
+  status             String?   @db.VarChar(255)
+  start_date         DateTime? @db.Date
+  end_date           DateTime? @db.Date
+  product_backlog_id Int
+}
+
+model users {
+  user_id       Int            @id @default(autoincrement())
+  username      String         @db.VarChar(255)
+  email         String         @db.VarChar(255)
+  password      String         @db.VarChar(255)
+  role          String
+  attendee      attendee[]
+  developer     developer?
+  product_owner product_owner?
+  session       session[]
+  notification  notification[]
+}
+
+model notification {
+  notification_id Int          @id @default(autoincrement())
+  user_id         Int?
+  message         String?      @db.VarChar(255)
+  users           users?       @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "notification_ibfk_1")
+  invitation      invitation[]
+
+  @@index([user_id], map: "user_id")
+}
+
+model invitation {
+  invitation_id    Int           @id @default(autoincrement())
+  project_id       Int?
+  developer_id     Int?
+  product_owner_id Int?
+  notification_id  Int?
+  status           String?       @db.VarChar(255)
+  notification     notification? @relation(fields: [notification_id], references: [notification_id], onDelete: NoAction, onUpdate: NoAction, map: "invitation_ibfk_1")
+}
